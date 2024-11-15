@@ -28124,28 +28124,31 @@ async function fetchPrimaryDeployment(cluster, service) {
     return deployment;
 }
 async function run() {
-    const clusterName = core.getInput("cluster", {
+    const cluster = core.getInput("cluster", {
         required: true,
     });
-    const serviceName = core.getInput("service", {
+    const service = core.getInput("service", {
         required: true,
     });
     const waitForMinutes = Number.parseInt(core.getInput("wait-for-minutes"), 10);
     const waitDurationMs = waitForMinutes * 60 * 1000;
     const waitStart = Date.now();
-    core.info(`Waiting for primary deployment to complete for ${clusterName}/${serviceName}`);
+    core.info(`Waiting for primary deployment to complete for ${cluster}/${service}`);
     try {
         while (true) {
-            const deployment = await fetchPrimaryDeployment(clusterName, serviceName);
+            const deployment = await fetchPrimaryDeployment(cluster, service);
             if (deployment.rolloutState === client_ecs_1.DeploymentRolloutState.COMPLETED)
                 break;
+            if (deployment.rolloutState === client_ecs_1.DeploymentRolloutState.FAILED) {
+                throw new Error(`Previous deployment failed for ${cluster}/${service}`);
+            }
             core.debug(`Deployment rollout state: ${deployment.rolloutState}`);
             if (Date.now() - waitStart > waitDurationMs) {
                 throw new Error("Timeout reached while waiting for deployment to complete.");
             }
             await delay(5000);
         }
-        core.info(`Primary deployment completed for ${clusterName}/${serviceName}`);
+        core.info(`Primary deployment completed for ${cluster}/${service}`);
     }
     catch (e) {
         core.setFailed(e.message);
