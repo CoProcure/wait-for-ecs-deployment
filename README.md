@@ -9,7 +9,7 @@ rolled back, the second deployment _cannot_ rollback.
 Usage
 ``` yaml
 - name: Wait for deployment
-  uses: coprocure/wait-for-ecs-deployment@v1.0
+  uses: coprocure/wait-for-ecs-deployment@v0.1.2
   with:
     cluster: main
     service: my-service
