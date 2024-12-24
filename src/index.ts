@@ -55,27 +55,26 @@ async function run() {
   core.info(
     `Waiting for primary deployment to complete for ${cluster}/${service}`
   );
-  try {
-    while (true) {
-      const deployment = await fetchPrimaryDeployment(cluster, service);
-      if (deployment.rolloutState === DeploymentRolloutState.COMPLETED) break;
-      if (deployment.rolloutState === DeploymentRolloutState.FAILED) {
-        throw new Error(`Previous deployment failed for ${cluster}/${service}`)
-      }
-      core.debug(`Deployment rollout state: ${deployment.rolloutState}`);
 
-      if (Date.now() - waitStart > waitDurationMs) {
-        throw new Error(
-          "Timeout reached while waiting for deployment to complete."
-        );
-      }
-
-      await delay(5000);
+  while (true) {
+    const deployment = await fetchPrimaryDeployment(cluster, service);
+    if (deployment.rolloutState === DeploymentRolloutState.COMPLETED) break;
+    if (deployment.rolloutState === DeploymentRolloutState.FAILED) {
+      throw new Error(`Previous deployment failed for ${cluster}/${service}`);
     }
-    core.info(`Primary deployment completed for ${cluster}/${service}`);
-  } catch (e) {
-    core.setFailed((e as Error).message);
+    core.debug(`Deployment rollout state: ${deployment.rolloutState}`);
+
+    if (Date.now() - waitStart > waitDurationMs) {
+      throw new Error(
+        "Timeout reached while waiting for deployment to complete."
+      );
+    }
+
+    await delay(5000);
   }
+  core.info(`Primary deployment completed for ${cluster}/${service}`);
 }
 
-run().then(() => process.exit(0));
+run()
+  .then(() => process.exit(0))
+  .catch((e) => core.setFailed((e as Error).message));
